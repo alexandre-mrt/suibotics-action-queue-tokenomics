@@ -11,12 +11,15 @@ use action_queue_tokenomics::cookie_token::COOKIE_TOKEN;
 const MAX_ACTION_TYPE: u8 = 4;
 // 1 COOKIE (9 decimals)
 const ACTION_COST: u64 = 1_000_000_000;
+const MAX_HISTORY: u64 = 1000;
+const MAX_PARAMS_LENGTH: u64 = 256;
 
 // ─── Error codes ───────────────────────────────────────────────────────────
 
 const EInvalidActionType: u64 = 0;
 const EEmptyQueue: u64 = 1;
 const EInsufficientPayment: u64 = 2;
+const EParamsTooLong: u64 = 3;
 
 // ─── Structs ───────────────────────────────────────────────────────────────
 
@@ -92,6 +95,7 @@ public fun enqueue(
     ctx: &mut TxContext,
 ) {
     assert!(action_type <= MAX_ACTION_TYPE, EInvalidActionType);
+    assert!(params.length() <= MAX_PARAMS_LENGTH, EParamsTooLong);
     assert!(payment.value() >= ACTION_COST, EInsufficientPayment);
 
     // Split exact cost from payment
@@ -136,6 +140,10 @@ public fun dequeue(
 
     let Action { id, action_type, params, creator, created_at } = queue.actions.remove(0);
 
+    if (queue.history.length() >= MAX_HISTORY) {
+        let ActionRecord { id: _, action_type: _, params: _, creator: _, created_at: _, executed_at: _ } = queue.history.remove(0);
+    };
+
     queue.history.push_back(ActionRecord {
         id,
         action_type,
@@ -149,6 +157,19 @@ public fun dequeue(
         action_type,
         executor: ctx.sender(),
     });
+}
+
+/// Withdraw accumulated fees. Admin only.
+#[allow(lint(self_transfer))]
+public fun withdraw_fees(
+    queue: &mut ActionQueue,
+    _: &AdminCap,
+    ctx: &mut TxContext,
+) {
+    let amount = queue.fees.value();
+    assert!(amount > 0, EEmptyQueue);
+    let coin = coin::from_balance(queue.fees.split(amount), ctx);
+    transfer::public_transfer(coin, ctx.sender());
 }
 
 /// Returns the number of pending actions in the queue.

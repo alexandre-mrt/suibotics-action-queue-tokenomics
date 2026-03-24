@@ -35,6 +35,10 @@ export class ActionQueueClient {
 		signer: Keypair,
 		params: EnqueueParams,
 	): Promise<ApiResponse<TransactionResult>> {
+		if (params.actionType < 0 || params.actionType > 4) {
+			return { success: false, error: "Invalid action type: must be 0-4" };
+		}
+
 		try {
 			const tx = new Transaction();
 
