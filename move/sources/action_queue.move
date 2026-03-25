@@ -20,6 +20,7 @@ const EInvalidActionType: u64 = 0;
 const EEmptyQueue: u64 = 1;
 const EInsufficientPayment: u64 = 2;
 const EParamsTooLong: u64 = 3;
+const ENoFeesToWithdraw: u64 = 4;
 
 // ─── Structs ───────────────────────────────────────────────────────────────
 
@@ -167,7 +168,7 @@ public fun withdraw_fees(
     ctx: &mut TxContext,
 ) {
     let amount = queue.fees.value();
-    assert!(amount > 0, EEmptyQueue);
+    assert!(amount > 0, ENoFeesToWithdraw);
     let coin = coin::from_balance(queue.fees.split(amount), ctx);
     transfer::public_transfer(coin, ctx.sender());
 }
