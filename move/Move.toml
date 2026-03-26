@@ -7,3 +7,7 @@ Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-fram
 
 [addresses]
 action_queue_tokenomics = "0x0"
+
+[environments]
+devnet = "e9eed8f1"
+testnet = "35834a8a"
