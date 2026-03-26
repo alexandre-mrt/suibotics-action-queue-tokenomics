@@ -21,15 +21,13 @@ public struct StakePool has key {
     id: UID,
     total_staked: u64,
     reward_rate: u64,
-    epoch: u64,
     balance: Balance<COOKIE_TOKEN>,
 }
 
-public struct StakePosition has key, store {
+public struct StakePosition has key {
     id: UID,
     amount: u64,
     start_epoch: u64,
-    owner: address,
 }
 
 // ─── Events ────────────────────────────────────────────────────────────────
@@ -53,7 +51,6 @@ fun init(ctx: &mut TxContext) {
         id: object::new(ctx),
         total_staked: 0,
         reward_rate: DEFAULT_REWARD_RATE,
-        epoch: 0,
         balance: balance::zero(),
     };
     transfer::share_object(pool);
@@ -81,7 +78,6 @@ public fun stake(
         id: object::new(ctx),
         amount,
         start_epoch: current_epoch,
-        owner: ctx.sender(),
     };
     transfer::transfer(position, ctx.sender());
 
@@ -99,7 +95,7 @@ public fun unstake(
     position: StakePosition,
     ctx: &mut TxContext,
 ) {
-    let StakePosition { id, amount, start_epoch: _, owner: _ } = position;
+    let StakePosition { id, amount, start_epoch: _ } = position;
     object::delete(id);
 
     assert!(amount > 0, EInsufficientStake);
@@ -123,11 +119,6 @@ public fun get_stake_amount(position: &StakePosition): u64 {
 /// Returns the total amount staked in the pool.
 public fun get_total_staked(pool: &StakePool): u64 {
     pool.total_staked
-}
-
-/// Check if an address has staked. Returns true (real check via StakePosition ownership).
-public fun is_staker(_pool: &StakePool, _addr: address): bool {
-    true
 }
 
 // ─── Test helpers ──────────────────────────────────────────────────────────
